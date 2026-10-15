@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BKU ke SPJ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f3f5f7;--card:#fff;--ink:#1d2733;--mut:#5d6b7a;--line:#d9dfe5;--ac:#0b7a75;--wbg:#fff1d6;--wk:#8a4b00}
+@media(prefers-color-scheme:dark){:root{--bg:#14191f;--card:#1c232b;--ink:#e6ebf0;--mut:#98a5b3;--line:#2e3843;--ac:#4fc3bb;--wbg:#3a2c10;--wk:#f3c36b}}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:980px;padding:16px;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,sans-serif}
+h1{font-size:20px;font-weight:600;margin:0 0 4px}
+p.h{margin:0 0 16px;color:var(--mut)}
+section{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px}
+label.up{display:inline-block;background:var(--ac);color:#fff;padding:10px 16px;border-radius:6px;font-weight:600;cursor:pointer}
+@media(prefers-color-scheme:dark){label.up{color:#0d1a19}}
+input[type=file]{display:none}
+select,textarea,button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+button{cursor:pointer}
+textarea{width:100%;min-height:200px;font:13px/1.5 ui-monospace,monospace}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+th{font-weight:600;color:var(--mut);font-size:13px}
+.num{text-align:right;white-space:nowrap}
+.sub{color:var(--mut);font-size:13px}
+tr.unk td{background:var(--wbg)}
+.warn{color:var(--wk);font-weight:600}
+#msg{color:#b3261e;margin:8px 0 0}
+.wrap{overflow-x:auto}
+.fi{display:block;font-size:13px;color:var(--mut);margin-bottom:8px}
+.fi input,td input[data-p]{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%;margin-top:2px}
+td input[data-p]{width:140px;margin:0}
+#lg{display:block}
+#fl{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 12px;margin-top:10px}
+#pr{display:none}
+.kw{font:10pt/1.35 Arial,sans-serif;color:#000;height:138mm;padding:2mm 8mm;box-sizing:border-box;border-bottom:1px dashed #999}
+.kw td{border:0;padding:0 4px 0 0}
+.kop{display:flex;align-items:center;gap:12px;border-bottom:2px solid #000;padding-bottom:4px;margin-bottom:6px;text-align:center}
+.kop>div{flex:1}.kop img,.kop .lg{width:60px;height:60px;flex:none}
+.k2{font-size:16pt}.s{font-size:8pt}
+.mt{margin-left:auto;width:auto}
+.jd{text-align:center;font-weight:bold;margin:8px 0}
+.f td:first-child{width:36mm}
+.bx{display:inline-block;border:1px solid #000;padding:2px 28px}
+.sg{display:flex;justify-content:space-around;text-align:center;margin-top:8px}
+.sg>div{min-width:62mm}
+.pa{text-align:center;margin-top:6px}
+.sp{height:28px}
+#pb{display:none;gap:8px;padding:8px 0;position:sticky;top:0;background:var(--bg);z-index:5}
+body.pv>*:not(#pr):not(#pb){display:none!important}
+body.pv #pb{display:flex}
+body.pv #pr{display:block;background:#fff;padding:8px}
+body.pv .kw{max-width:190mm;margin:0 auto 12px;border:1px solid #bbb}
+@page{size:A4;margin:8mm}
+@media print{body>*:not(#pr){display:none!important}#pr{display:block}body{padding:0;margin:0;max-width:none;background:#fff}.kw{break-inside:avoid}.kw:nth-child(2n){break-after:page;border-bottom:0}}
+</style></head><body>
+<h1>BKU ke SPJ</h1>
+<p class="h">Upload, baca data, klasifikasi, review, lalu cetak kuitansi.</p>
+
+<section>
+<label class="up" for="f">Pilih file BKU (.xlsx)</label>
+<input type="file" id="f" accept=".xlsx,.xlsm,.xls">
+<span id="shw" hidden> &nbsp;Sheet: <select id="sh"></select></span>
+<div id="msg"></div>
+</section>
+
+<section id="rs" hidden>
+<div id="sum"></div>
+</section>
+
+<section id="ts" hidden>
+<p><button id="kb">Cetak kuitansi</button> &nbsp;Centang jenis: <select id="cj"></select></p>
+<div class="wrap"><table>
+<thead><tr><th><input type="checkbox" id="ca" checked></th><th>Tanggal</th><th>Uraian</th><th class="num">Nominal</th><th>Jenis</th><th>Penerima</th></tr></thead>
+<tbody id="tb"></tbody></table></div>
+<p><button id="kb2">Cetak kuitansi</button></p>
+</section>
+
+<section>
+<details><summary>Aturan kata kunci</summary>
+<p class="sub">Satu aturan per baris: kata kunci = Jenis. Aturan paling atas dicek lebih dulu. Salin teks ini untuk cadangan.</p>
+<textarea id="ru"></textarea>
+<p><button id="sv">Simpan aturan</button></p>
+</details>
+</section>
+
+<section>
+<details><summary>Pengaturan kuitansi</summary>
+<div id="fl"></div>
+<label class="fi">Logo kop (pilih gambar)<input type="file" id="lg" accept="image/*"></label>
+<p><button id="sp">Simpan pengaturan</button></p>
+</details>
+</section>
+<div id="pb"><button id="pk">Kembali</button><button id="pc">Cetak / simpan PDF</button></div>
+<div id="pr"></div>
+
+<script>
+const DEF=`perjalanan dinas = SPPD
+bbm = BBM
+makan dan minum = Makan Minum
+alat listrik = Alat Listrik
+listrik = Listrik
+internet = Internet
+fotocopy = Fotocopy
+meterai = Meterai
+tinta = Bahan Komputer
+bahan komputer = Bahan Komputer
+pemeliharaan kendaraan = Pemeliharaan Kendaraan
+pemeliharaan unit = Pemeliharaan PC
+sewa panggung = Sewa Panggung
+pengajian = Honor Dai
+kontribusi = Jasa Kontribusi
+parabot = Peralatan Rumah Tangga
+rumah tangga = Peralatan Rumah Tangga
+tulis = ATK
+kertas = ATK`;
+const $=id=>document.getElementById(id);
+let rules=DEF,rows=[],wb;
+try{rules=localStorage.getItem('aturan')||DEF}catch(e){}
+$('ru').value=rules;
+
+const parseRules=t=>t.split('\n').map(l=>l.split('=')).filter(a=>a.length>1&&a[0].trim()).map(a=>[a[0].trim().toLowerCase(),a.slice(1).join('=').trim()]);
+const klas=u=>{const s=u.toLowerCase();for(const[k,j]of parseRules(rules))if(s.includes(k))return j;return''};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rp=n=>'Rp '+Math.round(n).toLocaleString('id-ID');
+const fd=v=>typeof v==='number'&&v>30000?new Date(Math.round((v-25569)*864e5)).toLocaleDateString('id-ID',{timeZone:'UTC'}):(v||'-');
+const jenisList=()=>[...new Set([...parseRules(rules).map(a=>a[1]),'Lainnya'])];
+
+function sppd(u){
+  const m=u.match(/\bAn\s+(.+?)(?=\s+(?:Dalam|Konsultasi|Koordinasi|Dkk|Ke|Rekonsiliasi|Verifikasi)\b|$)/i);
+  const o=u.match(/\(([^)]*orang[^)]*)\)/i);
+  return[m?m[1]:'',o?o[1].trim():''];
+}
+
+function parse(ws){
+  const R=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+  const hi=R.findIndex(r=>r.some(c=>String(c).trim().toLowerCase()==='uraian'));
+  if(hi<0)return null;
+  const H=R[hi].map(c=>String(c).trim().toLowerCase());
+  const ix=n=>H.findIndex(h=>h.includes(n));
+  const c={no:H.findIndex(h=>h==='no'),t:ix('tanggal'),u:ix('uraian'),n:ix('input bku')};
+  const out=[];
+  for(let i=hi+1;i<R.length;i++){
+    const r=R[i],u=String(r[c.u]).trim();
+    if(u.toUpperCase()==='JUMLAH')break;
+    const n=Number(r[c.n])||0;
+    if(!u||!n)continue;
+    out.push({no:c.no>=0?r[c.no]:'',t:r[c.t],u,n});
+  }
+  return out;
+}
+
+function summary(){
+  const m={};let t=0,k=0;
+  rows.forEach(r=>{const j=r.j||'Belum dikenali';m[j]=m[j]||[0,0];m[j][0]++;m[j][1]+=r.n;t+=r.n;if(!r.j)k++});
+  $('sum').innerHTML=`<p><b>${rows.length} baris</b>, total ${rp(t)}${k?`, <span class="warn">${k} belum dikenali</span>`:''}</p><table>`
+   +Object.entries(m).map(([j,v])=>`<tr><td>${esc(j)}</td><td class="num">${v[0]} baris</td><td class="num">${rp(v[1])}</td></tr>`).join('')+'</table>';
+}
+
+function draw(){
+  const L=jenisList(),cv=$('cj').value;
+  $('rs').hidden=$('ts').hidden=!rows.length;
+  $('cj').innerHTML='<option value="">Semua</option>'+L.map(j=>`<option>${esc(j)}</option>`).join('');
+  $('cj').value=cv;
+  $('tb').innerHTML=rows.map((r,i)=>{
+    const d=r.j==='SPPD'?sppd(r.u):null;
+    const x=d&&(d[0]||d[1])?`<div class="sub">${esc([d[0],d[1]].filter(Boolean).join(', '))}</div>`:'';
+    return `<tr class="${r.j?'':'unk'}"><td><input type="checkbox" data-c="${i}"${r.c?' checked':''}></td><td>${fd(r.t)}</td><td>${esc(r.u)}${x}</td><td class="num">${rp(r.n)}</td>
+    <td><select data-i="${i}"><option value="">Belum dikenali</option>${L.map(j=>`<option${j===r.j?' selected':''}>${esc(j)}</option>`).join('')}</select></td>
+    <td><input data-p="${i}" value="${esc(pen(r))}"></td></tr>`;
+  }).join('');
+  summary();
+}
+
+$('tb').onchange=e=>{
+  const s=e.target,d=s.dataset;
+  if(d.c!==undefined){rows[d.c].c=s.checked;return}
+  if(d.p!==undefined){rows[d.p].p=s.value;return}
+  const r=rows[d.i];
+  r.j=s.value;
+  const tr=s.closest('tr');
+  tr.className=r.j?'':'unk';
+  if(!r.p)tr.querySelector('[data-p]').value=pen(r);
+  summary();
+};
+
+function muat(){
+  const r=parse(wb.Sheets[$('sh').value]);
+  if(!r){$('msg').textContent='Kolom "Uraian" tidak ditemukan di sheet ini.';rows=[];draw();return}
+  $('msg').textContent=r.length?'':'Tidak ada baris pengeluaran yang terbaca di sheet ini.';
+  rows=r.map(x=>({...x,j:klas(x.u),c:true,p:''}));
+  draw();
+}
+
+$('f').onchange=async e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+  if(typeof XLSX==='undefined'){$('msg').textContent='Library Excel belum termuat. Periksa koneksi internet lalu muat ulang halaman.';return}
+  try{wb=XLSX.read(await f.arrayBuffer(),{type:'array'})}
+  catch(x){$('msg').textContent='File tidak bisa dibaca. Pastikan formatnya Excel (.xlsx).';return}
+  $('sh').innerHTML=wb.SheetNames.map(n=>`<option>${esc(n)}</option>`).join('');
+  $('shw').hidden=false;
+  muat();
+};
+$('sh').onchange=muat;
+
+$('sv').onclick=()=>{
+  rules=$('ru').value;
+  try{localStorage.setItem('aturan',rules)}catch(e){}
+  rows.forEach(r=>{if(!r.j)r.j=klas(r.u)});
+  draw();
+};
+const pen=r=>r.p||(r.j==='SPPD'?sppd(r.u)[0]:'');
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+const SA=['','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan','sepuluh','sebelas'];
+function tb(n){
+  if(n<12)return SA[n];
+  if(n<20)return tb(n-10)+' belas';
+  if(n<100)return tb(Math.floor(n/10))+' puluh'+(n%10?' '+tb(n%10):'');
+  if(n<200)return 'seratus'+(n%100?' '+tb(n%100):'');
+  if(n<1e3)return tb(Math.floor(n/100))+' ratus'+(n%100?' '+tb(n%100):'');
+  if(n<2e3)return 'seribu'+(n%1e3?' '+tb(n%1e3):'');
+  if(n<1e6)return tb(Math.floor(n/1e3))+' ribu'+(n%1e3?' '+tb(n%1e3):'');
+  if(n<1e9)return tb(Math.floor(n/1e6))+' juta'+(n%1e6?' '+tb(n%1e6):'');
+  return tb(Math.floor(n/1e9))+' miliar'+(n%1e9?' '+tb(n%1e9):'');
+}
+const tl=v=>typeof v==='number'&&v>3e4?new Date(Math.round((v-25569)*864e5)).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'}):'';
+
+const DP={kop1:'PEMERINTAH KABUPATEN SUKABUMI',kop2:'KECAMATAN WARUNGKIARA',alamat:'Alamat : JL Pelabuhanratu Km 30 Telp ( 0266 ) 321004 Kode Pos 4336',email:'e-mail : Warungkiarakecamatan@gmail.com',terima:'Kecamatan Warungkiara Kabupaten Sukabumi',kota:'Sukabumi',bn:'UDU SANDUSIAH, S.IP',bnip:'19681213 200701 1 007',pn:'TONI SUGIARTO, S.IP, MM',pnip:'19781124 200701 1 003',logo:''};
+const FL=[['kop1','Kop baris 1'],['kop2','Kop baris 2'],['alamat','Alamat'],['email','Email'],['terima','Sudah terima dari'],['kota','Kota tanda tangan'],['bn','Nama bendahara'],['bnip','NIP bendahara'],['pn','Nama pengguna anggaran'],['pnip','NIP pengguna anggaran']];
+let P={...DP};
+try{P={...DP,...JSON.parse(localStorage.getItem('pengaturan')||'{}')}}catch(e){}
+$('fl').innerHTML=FL.map(([k,l])=>`<label class="fi">${l}<input data-k="${k}" value="${esc(P[k])}"></label>`).join('');
+function simpanP(){
+  document.querySelectorAll('[data-k]').forEach(i=>P[i.dataset.k]=i.value);
+  try{localStorage.setItem('pengaturan',JSON.stringify(P));$('msg').textContent=''}
+  catch(e){$('msg').textContent='Pengaturan tidak bisa disimpan. Coba kecilkan ukuran logo.'}
+}
+$('sp').onclick=simpanP;
+$('lg').onchange=e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+  const R=new FileReader();
+  R.onload=()=>{P.logo=R.result;simpanP()};
+  R.readAsDataURL(f);
+};
+
+function kw(r){
+  const t=tl(r.t),u=r.u.replace(/^Dibayarkan\s+(Belanja\s+)?/i,'');
+  return `<div class="kw"><div class="kop">${P.logo?`<img src="${P.logo}">`:'<div class="lg"></div>'}<div><div>${esc(P.kop1)}</div><b class="k2">${esc(P.kop2)}</b><div class="s">${esc(P.alamat)}</div><div class="s">${esc(P.email)}</div></div></div>
+<table class="mt"><tr><td>Nomor BKU</td><td>: ${esc(r.no||'')}</td></tr><tr><td>Tanggal</td><td>: ${fd(r.t)}</td></tr><tr><td>Kode Rekening</td><td>:</td></tr></table>
+<div class="jd">KWITANSI PEMBAYARAN</div>
+<table class="f"><tr><td>Sudah terima dari</td><td>: ${esc(P.terima)}</td></tr>
+<tr><td>Besarnya Uang</td><td>: <b>=== ${esc(cap(tb(Math.round(r.n))))} rupiah ===</b></td></tr>
+<tr><td>Terbilang</td><td>: <span class="bx">Rp ${Math.round(r.n).toLocaleString('id-ID')},-</span></td></tr>
+<tr><td>Untuk Keperluan</td><td>: Pembayaran ${esc(u)}</td></tr></table>
+<div class="sg"><div>Lunas dibayar,<br>Bendahara Pengeluaran,<div class="sp"></div><b><u>${esc(P.bn)}</u></b><br>NIP. ${esc(P.bnip)}</div>
+<div>${esc(P.kota)}, ${esc(t)}<br>Yang Menerima,<div class="sp"></div><b>${esc(pen(r))}</b></div></div>
+<div class="pa">MENYETUJUI :<br>Pengguna Anggaran,<div class="sp"></div><b>${esc(P.pn)}</b><br>NIP. ${esc(P.pnip)}</div></div>`;
+}
+
+$('ca').onchange=e=>{rows.forEach(r=>r.c=e.target.checked);draw()};
+$('cj').onchange=e=>{rows.forEach(r=>r.c=!e.target.value||r.j===e.target.value);draw()};
+$('kb').onclick=$('kb2').onclick=()=>{
+  const s=rows.filter(r=>r.c);
+  if(!s.length){$('msg').textContent='Centang minimal satu baris.';return}
+  $('msg').textContent='';
+  $('pr').innerHTML=s.map(kw).join('');
+  document.body.classList.add('pv');
+  window.scrollTo(0,0);
+};
+$('pk').onclick=()=>document.body.classList.remove('pv');
+$('pc').onclick=()=>window.print();
+</script>
+</body></html>
